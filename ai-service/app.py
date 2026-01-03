@@ -14,7 +14,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Gemini AI via OpenRouter
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "YOUR_OPENROUTER_API_KEY_HERE"
 
 def call_gemini(prompt):
     """Call Gemini API for content analysis"""

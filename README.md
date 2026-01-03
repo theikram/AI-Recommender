@@ -264,14 +264,14 @@ Create `.env` in root directory:
 
 ```env
 # MongoDB
-MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/
+MONGODB_URI=YOUR_MONGODB_URI_HERE
 
 # Ports
 BACKEND_PORT=5000
 PYTHON_SERVICE_PORT=8000
 
 # AI (set in ai-service/app.py)
-OPENROUTER_API_KEY=sk-or-v1-xxxxx
+OPENROUTER_API_KEY=YOUR_OPENROUTER_API_KEY_HERE
 ```
 
 ---
