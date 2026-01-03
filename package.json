@@ -1,0 +1,27 @@
+{
+  "name": "ai-recommender-system",
+  "version": "1.0.0",
+  "description": "Link-Based AI Recommender System using GenAI + Data Science",
+  "main": "backend/server.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:ai\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:ai": "cd ai-service && python app.py",
+    "install": "cd frontend && npm install && cd ../backend && npm install",
+    "setup:conda": "conda create -n ai-recommender python=3.10 -y && conda activate ai-recommender && cd ai-service && pip install -r requirements.txt"
+  },
+  "keywords": [
+    "ai",
+    "recommender-system",
+    "embeddings",
+    "faiss",
+    "gemini",
+    "data-science"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

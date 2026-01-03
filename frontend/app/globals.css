@@ -1,0 +1,235 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&display=swap');
+@import "tailwindcss";
+
+:root {
+    --neon: #ADFF2F;
+    --bg: #08080a;
+}
+
+body {
+    background: var(--bg);
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+}
+
+/* Hide Scrollbar */
+::-webkit-scrollbar {
+    display: none;
+}
+
+* {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+/* Neon Glow Text */
+.neon-text {
+    color: var(--neon);
+    text-shadow: 0 0 8px var(--neon), 0 0 25px var(--neon);
+}
+
+/* Glass Effect */
+.glass {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+}
+
+/* Glass Navbar - Nearly invisible, blends with background */
+.glass-nav {
+    background: transparent;
+    backdrop-filter: blur(12px);
+}
+
+/* Neon Button */
+.btn-neon {
+    background: var(--neon);
+    color: #000;
+    padding: 14px 32px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 0 20px rgba(173, 255, 47, 0.4);
+    transition: all 0.3s;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-neon:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(173, 255, 47, 0.6);
+}
+
+.btn-neon:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Ghost Button */
+.btn-ghost {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    padding: 14px 32px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 13px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.btn-ghost:hover {
+    color: #fff;
+    border-color: rgba(173, 255, 47, 0.4);
+    background: rgba(173, 255, 47, 0.05);
+}
+
+/* Floating Icons Background */
+.floating-icons {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.floating-icon {
+    position: absolute;
+    font-size: 2rem;
+    opacity: 0.06;
+    animation: float 25s infinite ease-in-out;
+}
+
+.floating-icon:nth-child(1) {
+    left: 5%;
+    top: 20%;
+    animation-delay: 0s;
+}
+
+.floating-icon:nth-child(2) {
+    left: 15%;
+    top: 60%;
+    animation-delay: -3s;
+    font-size: 2.5rem;
+}
+
+.floating-icon:nth-child(3) {
+    left: 25%;
+    top: 35%;
+    animation-delay: -6s;
+}
+
+.floating-icon:nth-child(4) {
+    left: 40%;
+    top: 75%;
+    animation-delay: -9s;
+    font-size: 1.8rem;
+}
+
+.floating-icon:nth-child(5) {
+    left: 55%;
+    top: 15%;
+    animation-delay: -12s;
+}
+
+.floating-icon:nth-child(6) {
+    left: 70%;
+    top: 50%;
+    animation-delay: -15s;
+    font-size: 2.2rem;
+}
+
+.floating-icon:nth-child(7) {
+    left: 80%;
+    top: 25%;
+    animation-delay: -18s;
+}
+
+.floating-icon:nth-child(8) {
+    left: 90%;
+    top: 70%;
+    animation-delay: -2s;
+    font-size: 1.6rem;
+}
+
+.floating-icon:nth-child(9) {
+    left: 35%;
+    top: 85%;
+    animation-delay: -7s;
+}
+
+.floating-icon:nth-child(10) {
+    left: 65%;
+    top: 40%;
+    animation-delay: -11s;
+    font-size: 2.4rem;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    25% {
+        transform: translateY(-30px) rotate(5deg);
+    }
+
+    50% {
+        transform: translateY(-15px) rotate(-3deg);
+    }
+
+    75% {
+        transform: translateY(-40px) rotate(3deg);
+    }
+}
+
+/* Fade Animation */
+.fade-up {
+    animation: fadeUp 0.7s ease-out forwards;
+    opacity: 0;
+}
+
+.delay-1 {
+    animation-delay: 0.1s;
+}
+
+.delay-2 {
+    animation-delay: 0.2s;
+}
+
+.delay-3 {
+    animation-delay: 0.3s;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Glow Card */
+.glow-card {
+    background: rgba(173, 255, 47, 0.03);
+    border: 1px solid rgba(173, 255, 47, 0.15);
+    border-radius: 16px;
+    transition: all 0.3s;
+}
+
+.glow-card:hover {
+    border-color: rgba(173, 255, 47, 0.4);
+    box-shadow: 0 0 30px rgba(173, 255, 47, 0.1);
+    transform: translateY(-4px);
+}
