@@ -164,7 +164,7 @@ export default function Home() {
                         <span className="neon-text">Tech</span> Stack
                     </h2>
                     <div className="flex flex-wrap justify-center gap-3">
-                        {['Next.js 14', 'TypeScript', 'Tailwind CSS', 'Express.js', 'MongoDB', 'Python', 'Flask', 'FAISS', 'Gemini AI', 'OpenRouter'].map((tech, i) => (
+                        {['Next.js 14', 'TypeScript', 'Tailwind CSS', 'Express.js', 'MongoDB', 'Python', 'FastAPI', 'FAISS', 'Gemini AI', 'OpenRouter'].map((tech, i) => (
                             <span key={i} className="px-4 py-2 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-white/60">
                                 {tech}
                             </span>

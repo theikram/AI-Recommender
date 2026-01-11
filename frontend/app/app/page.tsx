@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-// AI service endpoint (Flask Python)
+// AI service endpoint (FastAPI Python)
 const API_URL = 'http://localhost:8000';
 
 export default function AppPage() {

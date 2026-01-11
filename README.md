@@ -5,6 +5,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Gemini AI](https://img.shields.io/badge/Gemini_AI-4285F4?style=for-the-badge&logo=google&logoColor=white)
 
@@ -74,7 +75,7 @@ Paste any URL → Get AI-powered analysis → Discover related content.
          │
          ▼
 ┌─────────────────┐      ┌──────────────┐
-│   Python Flask  │─────►│  Gemini AI   │
+│  Python FastAPI │─────►│  Gemini AI   │
 │   AI Service    │      │  (OpenRouter)│
 │   (Port 8000)   │      └──────────────┘
 └────────┬────────┘
@@ -161,7 +162,7 @@ Visit `http://localhost:3000` 🎉
 │   └── package.json
 │
 ├── 📂 ai-service/               # Python AI Microservice
-│   ├── app.py                  # Main Flask app + Gemini
+│   ├── app.py                  # FastAPI app + Gemini AI
 │   ├── text_extractor.py       # Web content extraction
 │   ├── vector_store.py         # FAISS vector database
 │   ├── embeddings.py           # Embedding generation
@@ -250,7 +251,9 @@ User pastes URL
 ### AI Service
 | Tech | Purpose |
 |------|---------|
-| **Flask** | Python web framework |
+| **FastAPI** | Modern async Python web framework |
+| **Uvicorn** | ASGI server for high performance |
+| **Pydantic** | Request/response validation |
 | **Gemini AI** | Content analysis (via OpenRouter) |
 | **FAISS** | Vector similarity search |
 | **BeautifulSoup** | Web scraping |
@@ -298,11 +301,13 @@ OPENROUTER_API_KEY=YOUR_OPENROUTER_API_KEY_HERE
 | GET | `/api/content` | List analyzed content |
 | GET | `/api/history` | Query history |
 
-### AI Service (Flask)
+### AI Service (FastAPI)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/extract` | Extract, analyze, recommend |
 | GET | `/health` | Service health check |
+| GET | `/docs` | 📚 **Swagger UI** - Interactive API docs |
+| GET | `/redoc` | 📖 **ReDoc** - Alternative API docs |
 
 ---
 

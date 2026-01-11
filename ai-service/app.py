@@ -1,52 +1,145 @@
-# AI Recommender Service - Flask + Gemini AI + FAISS
+# AI Recommender Service - FastAPI + Gemini AI + FAISS
 import os
 import re
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import requests
+from pathlib import Path
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional
+import httpx
 import numpy as np
 from urllib.parse import quote_plus, urlparse
+import uvicorn
 
 from text_extractor import extract_text_from_url
 from vector_store import VectorStore
 
-app = Flask(__name__)
-CORS(app)
+# Load environment variables from parent directory's .env file
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(env_path)
 
-# Gemini AI via OpenRouter
-OPENROUTER_API_KEY = "YOUR_OPENROUTER_API_KEY_HERE"
+# API Keys - supports both Google AI direct and OpenRouter
+GOOGLE_AI_API_KEY = os.getenv("GOOGLE_AI_API_KEY", "")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 
-def call_gemini(prompt):
-    """Call Gemini API for content analysis"""
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "model": "google/gemini-2.0-flash-001",
-        "messages": [{"role": "user", "content": prompt}]
-    }
+# Configure Google Gemini AI if key is available
+if GOOGLE_AI_API_KEY:
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=GOOGLE_AI_API_KEY)
+        print("✅ Google AI API configured")
+    except ImportError:
+        print("⚠️ google-generativeai not installed, using OpenRouter")
+        GOOGLE_AI_API_KEY = ""
+
+# FastAPI app initialization
+app = FastAPI(
+    title="AI Recommender Service",
+    description="AI-powered content analysis and recommendation system using Gemini AI and FAISS",
+    version="2.0.0"
+)
+
+# CORS configuration - allows all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Pydantic models for request/response validation
+class ExtractRequest(BaseModel):
+    url: str
+
+
+class HealthResponse(BaseModel):
+    status: str
+
+
+class RecommendationItem(BaseModel):
+    title: str
+    url: str
+    type: str
+    snippet: Optional[str] = None
+    videoId: Optional[str] = None
+    thumbnail: Optional[str] = None
+
+
+class Recommendations(BaseModel):
+    articles: list[RecommendationItem]
+    youtube: list[RecommendationItem]
+
+
+class ExtractResponse(BaseModel):
+    title: str
+    summary: str
+    category: str
+    keywords: str
+    contentType: str
+    recommendations: Recommendations
+
+
+class RecommendResponse(BaseModel):
+    message: str
+
+
+async def call_gemini(prompt: str) -> str:
+    """Call Gemini AI - tries Google AI first, falls back to OpenRouter"""
     
-    response = requests.post(url, headers=headers, json=data, timeout=60)
-    result = response.json()
+    # Try Google AI first
+    if GOOGLE_AI_API_KEY:
+        try:
+            import google.generativeai as genai
+            model = genai.GenerativeModel('gemini-2.0-flash')
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            print(f"⚠️ Google AI error: {e}, trying OpenRouter...")
     
-    if 'choices' in result:
-        return result['choices'][0]['message']['content']
-    elif 'error' in result:
-        raise Exception(result['error'].get('message', str(result['error'])))
-    return ""
+    # Fallback to OpenRouter
+    if OPENROUTER_API_KEY:
+        try:
+            url = "https://openrouter.ai/api/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "model": "google/gemini-2.0-flash-exp:free",
+                "messages": [{"role": "user", "content": prompt}]
+            }
+            
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(url, headers=headers, json=data)
+                result = response.json()
+            
+            if 'choices' in result:
+                return result['choices'][0]['message']['content']
+            elif 'error' in result:
+                raise Exception(result['error'].get('message', str(result['error'])))
+        except Exception as e:
+            print(f"❌ OpenRouter error: {e}")
+            raise
+    
+    raise Exception("No AI API key configured. Set GOOGLE_AI_API_KEY or OPENROUTER_API_KEY in .env")
+
 
 # YouTube URL detection
-def is_youtube_url(url):
+def is_youtube_url(url: str) -> bool:
     parsed = urlparse(url)
     return any(h in parsed.netloc for h in ['youtube.com', 'youtu.be'])
 
-def get_youtube_video_title(url):
-    """Extract actual video title from YouTube"""
+
+async def get_youtube_video_title(url: str) -> Optional[str]:
+    """Extract actual video title from YouTube (async)"""
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        response = requests.get(url, headers=headers, timeout=10)
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, headers=headers)
         
         # Try multiple patterns to find the title
         patterns = [
@@ -68,8 +161,9 @@ def get_youtube_video_title(url):
     except:
         return None
 
+
 # DuckDuckGo article search
-def search_web(query, num_results=6):
+def search_web(query: str, num_results: int = 6) -> list[dict]:
     try:
         from duckduckgo_search import DDGS
         
@@ -105,13 +199,15 @@ def search_web(query, num_results=6):
         print(f'❌ Web search error: {e}')
         return []
 
-# YouTube video search
-def search_youtube(query, num_results=6):
+
+# YouTube video search (async)
+async def search_youtube(query: str, num_results: int = 6) -> list[dict]:
     try:
         search_url = f"https://www.youtube.com/results?search_query={quote_plus(query)}"
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         
-        response = requests.get(search_url, headers=headers, timeout=10)
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(search_url, headers=headers)
         
         results = []
         video_ids = re.findall(r'"videoId":"([a-zA-Z0-9_-]{11})"', response.text)
@@ -135,8 +231,9 @@ def search_youtube(query, num_results=6):
         print(f'❌ YouTube search error: {e}')
         return []
 
+
 # Generate 768D vector embedding
-def generate_embedding(text):
+def generate_embedding(text: str) -> np.ndarray:
     words = text.lower().split()[:500]
     embedding = np.zeros(768, dtype='float32')
     for word in words:
@@ -147,23 +244,27 @@ def generate_embedding(text):
         embedding = embedding / norm
     return embedding
 
+
 # Initialize FAISS vector store
 vector_store = VectorStore(dimension=768)
 content_database = {}
 
-@app.route('/health', methods=['GET'])
-def health():
-    return jsonify({'status': 'ok'})
+
+@app.get("/health", response_model=HealthResponse)
+async def health():
+    """Health check endpoint"""
+    return {"status": "ok"}
+
 
 # Main API endpoint
-@app.route('/extract', methods=['POST'])
-def extract():
+@app.post("/extract", response_model=ExtractResponse)
+async def extract(request: ExtractRequest):
+    """Extract content from URL and get AI-powered recommendations"""
     try:
-        data = request.json
-        url = data.get('url')
+        url = request.url
         
         if not url:
-            return jsonify({'error': 'URL is required'}), 400
+            raise HTTPException(status_code=400, detail="URL is required")
         
         print(f'📥 Analyzing: {url}')
         
@@ -173,7 +274,7 @@ def extract():
         
         if is_youtube:
             print('📺 Detected YouTube video')
-            youtube_title = get_youtube_video_title(url)
+            youtube_title = await get_youtube_video_title(url)
             print(f'📺 Video title: {youtube_title}')
         
         # STEP 1: Extract content using BeautifulSoup web scraper
@@ -188,7 +289,7 @@ def extract():
             search_query = None
         
         if not content_for_analysis or len(content_for_analysis) < 10:
-            return jsonify({'error': 'Could not extract content from URL'}), 400
+            raise HTTPException(status_code=400, detail="Could not extract content from URL")
         
         # STEP 2: Call Gemini AI for analysis & keyword extraction
         print('🤖 Generating analysis...')
@@ -212,7 +313,7 @@ SUMMARY: [brief summary, max 150 chars]
 CATEGORY: [one of: Technology, News, Entertainment, Education, Science, Business, Health, Sports, Music, Other]
 KEYWORDS: [Write a single specific search query (3-6 words) to find similar articles. Be very specific - include the main topic. For example: "machine learning neural networks tutorial" or "climate change effects research". Do NOT use generic words like "article" or "information".]"""
         
-        ai_response = call_gemini(prompt)
+        ai_response = await call_gemini(prompt)
         
         title = youtube_title or extracted['title']
         summary = 'Content analyzed'
@@ -255,7 +356,7 @@ KEYWORDS: [Write a single specific search query (3-6 words) to find similar arti
         # STEP 3: Search for related content (DuckDuckGo or YouTube)
         if is_youtube:
             # For YouTube videos, only search for similar videos
-            youtube_results = search_youtube(search_query, num_results=6)
+            youtube_results = await search_youtube(search_query, num_results=6)
             web_results = []
             print(f'📺 Found {len(youtube_results)} similar videos')
         else:
@@ -276,7 +377,7 @@ KEYWORDS: [Write a single specific search query (3-6 words) to find similar arti
             'is_youtube': is_youtube
         }
         
-        return jsonify({
+        return {
             'title': title,
             'summary': summary,
             'category': category,
@@ -286,20 +387,26 @@ KEYWORDS: [Write a single specific search query (3-6 words) to find similar arti
                 'articles': web_results,
                 'youtube': youtube_results
             }
-        })
+        }
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f'❌ Error: {e}')
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.route('/recommend', methods=['POST'])
-def recommend():
-    return jsonify({'message': 'Use /extract endpoint'})
+
+@app.post("/recommend", response_model=RecommendResponse)
+async def recommend():
+    """Redirect to /extract endpoint"""
+    return {"message": "Use /extract endpoint"}
+
 
 if __name__ == '__main__':
     print('🚀 AI Service starting on port 8000')
     print('📺 YouTube: Smart video detection')
     print('📰 Articles: DuckDuckGo search')
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    print('⚡ Powered by FastAPI')
+    uvicorn.run(app, host='0.0.0.0', port=8000)
